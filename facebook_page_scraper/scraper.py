@@ -45,6 +45,7 @@ class Facebook_scraper:
                  timeout=600, headless=True, isGroup=False, username=None, password=None, driver_install_config=None):
         if url:
             self.URL = url
+            self.page_or_group_name = page_or_group_name
         else:
             self.page_or_group_name = page_or_group_name
             self.URL = "https://facebook.com/{}".format(self.page_or_group_name)
