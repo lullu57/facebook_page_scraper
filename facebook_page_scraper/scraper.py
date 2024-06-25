@@ -95,8 +95,9 @@ class Facebook_scraper:
         # navigate to URL
         self.__driver.get(self.URL)
         # only login if username is provided
-        self.username is not None and Finder._Finder__login(self.__driver, self.username, self.password)
         Finder._Finder__accept_cookies(self.__driver)
+        self.username is not None and Finder._Finder__login(self.__driver, self.username, self.password)
+        
         self.__layout = Finder._Finder__detect_ui(self.__driver)
         # sometimes we get popup that says "your request couldn't be processed", however
         # posts are loading in background if popup is closed, so call this method in case if it pops up.
