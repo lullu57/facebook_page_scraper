@@ -432,31 +432,24 @@ class Finder:
 
     @staticmethod
     def __find_image_url(post, layout):
-        """finds all image of the facebook post using selenium's webdriver's method"""
+        """Finds all images of the Facebook post using Selenium's WebDriver's method."""
         try:
             if layout == "old":
-                # find all img tag that looks like <img class="scaledImageFitWidth img" src=""> div > img[referrerpolicy]
-                images = post.find_elements(
-                    By.CSS_SELECTOR, "img.scaledImageFitWidth.img"
-                )
-                # extract src attribute from all the img tag,store it in list
+                # For the old layout, find images using known class names
+                images = post.find_elements(By.CSS_SELECTOR, "img.scaledImageFitWidth.img")
             elif layout == "new":
-                images = post.find_elements(
-                    By.CSS_SELECTOR, "div > img[referrerpolicy]"
-                )
-            sources = (
-                [image.get_attribute("src") for image in images]
-                if len(images) > 0
-                else []
-            )
+                # For the new layout, search for image elements with various classes and attributes
+                images = post.find_elements(By.CSS_SELECTOR, "div img[referrerpolicy], img[src], img[class*='img'], img[class*='scaledImageFitWidth']")
+            
+            sources = [image.get_attribute("src") for image in images if image.get_attribute("src")] if images else []
         except NoSuchElementException:
             sources = []
-            pass
         except Exception as ex:
-            logger.exception("Error at find_image_url method : {}".format(ex))
+            logger.exception("Error at find_image_url method: {}".format(ex))
             sources = []
 
         return sources
+
 
     @staticmethod
     def __find_post_id(post, layout):
@@ -648,21 +641,37 @@ class Finder:
 
     @staticmethod
     def __find_all_posts(driver, layout, isGroup):
-        """finds all posts of the facebook page using selenium's webdriver's method"""
+        """Finds all posts of the Facebook page using Selenium's WebDriver's method"""
         try:
-            # find all posts that looks like <div class="userContentWrapper"> </div>
-            if layout == "old":
-                all_posts = driver.find_elements(
-                    By.CSS_SELECTOR, "div.userContentWrapper"
-                )
-            elif layout == "new":
-                # all_posts = driver.find_elements(By.CSS_SELECTOR, "div[role='feed'] > div")
-                # different query selectors depending on if we are scraping a FB page or group
-                all_posts = driver.find_elements(By.CSS_SELECTOR, "div[role='feed'] > div" if isGroup else 'div[role="article"]')
+            all_posts = []
+            last_height = driver.execute_script("return document.body.scrollHeight")
+            while True:
+                if layout == "old":
+                    new_posts = driver.find_elements(By.CSS_SELECTOR, "div.userContentWrapper")
+                elif layout == "new":
+                    if isGroup:
+                        new_posts = driver.find_elements(By.CSS_SELECTOR, "div[role='feed'] > div")
+                    else:
+                        new_posts = driver.find_elements(By.CSS_SELECTOR, "div[role='article']")
+
+                    # Update the selector for new layout
+                    new_posts = driver.find_elements(By.CSS_SELECTOR, "div.x1yztbdb.x1n2onr6.xh8yej3.x1ja2u2z")
+
+                all_posts.extend(new_posts)
+                all_posts = list(set(all_posts))  # Remove duplicates
+
+                # Scroll to the bottom of the page to load more posts
+                driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+                time.sleep(2)  # Adjust sleep time as needed
+
+                new_height = driver.execute_script("return document.body.scrollHeight")
+                if new_height == last_height:
+                    break  # Exit if no new posts are loaded
+                last_height = new_height
+
             return all_posts
         except NoSuchElementException:
             logger.error("Cannot find any posts! Exiting!")
-            # if this fails to find posts that means, code cannot move forward, as no post is found
             Utilities.__close_driver(driver)
             sys.exit(1)
         except Exception as ex:
@@ -720,12 +729,21 @@ class Finder:
     @staticmethod
     def __accept_cookies(driver):
         try:
-            button = driver.find_elements(
-                By.CSS_SELECTOR, '[aria-label="Allow essential and optional cookies"]'
-            )
-            button[-1].click()
-        except (NoSuchElementException, IndexError):
-            pass
+            # Use JavaScript to find the button containing the text "Allow all cookies"
+            buttons = driver.execute_script("""
+                return Array.from(document.querySelectorAll('div[role="none"] span'))
+                            .filter(span => span.textContent.includes('Allow all cookies'));
+            """)
+            
+            # Check if any elements were found
+            if buttons:
+                ActionChains(driver).move_to_element(buttons[-1]).click().perform()  # Click the last one if multiple are found
+            else:
+                logger.info("No 'Allow all cookies' button found.")
+        except NoSuchElementException:
+            logger.info("No such element exception occurred.")
+        except IndexError:
+            logger.info("Index error occurred.")
         except Exception as ex:
             logger.exception("Error at accept_cookies: {}".format(ex))
             sys.exit(1)
@@ -757,7 +775,7 @@ class Finder:
             #target the login button and click it
             try:
                 # Try to click the first button of type 'submit'
-                WebDriverWait(driver, 2).until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit']"))).click()
+                WebDriverWait(driver, 2).until(EC.element_to_be_clickable((By.CSS_SELECTOR, "div[role='button'][aria-label='Accessible login button']"))).click()
             except TimeoutException:
                 # If the button of type 'submit' is not found within 2 seconds, click the first 'button' found
                 WebDriverWait(driver, 2).until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button"))).click()
