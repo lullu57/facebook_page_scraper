@@ -107,11 +107,11 @@ class Facebook_scraper:
             self.__driver, self.__layout, self.timeout)
         # scroll down to bottom most
         Utilities._Utilities__scroll_down(self.__driver, self.__layout)
-        self.__handle_popup(self.__layout)
+        #self.__handle_popup(self.__layout)
         # timestamp limitation for scraping posts
         timestamp_edge_hit = False
         while (not timestamp_edge_hit) and (len(self.__data_dict) < self.posts_count) and elements_have_loaded:
-            self.__handle_popup(self.__layout)
+            #self.__handle_popup(self.__layout)
             # self.__find_elements(name)
             timestamp_edge_hit = self.__find_elements(minimum_timestamp)
             current_time = time.time()
@@ -337,7 +337,9 @@ class Facebook_scraper:
                     video = Finder._Finder__find_video_url(post)
 
                 image = Finder._Finder__find_all_image_url(post, self.__layout, self.__driver)
-
+                
+                if image['images'] == []:
+                    image['images'] = Finder._Finder__find_image_url(post, self.__layout)
                 # post_url = "https://www.facebook.com/{}/posts/{}".format(self.page_or_group_name,status)
 
                 self.__data_dict[status] = {

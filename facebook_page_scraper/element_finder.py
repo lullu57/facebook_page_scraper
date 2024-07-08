@@ -226,7 +226,7 @@ class Finder:
                 )
             elif layout == "new":
                 element = post.find_element(
-                    By.CSS_SELECTOR, 'div:nth-child(1) > span > div > div > div:nth-child(1) > span'
+                    By.CSS_SELECTOR, "div.x1i10hfl.x1qjc9v5.xjqpnuy.xa49m3k.xqeqjp1.x2hbi6w.x1ypdohk.xdl72j9.x2lah0s.xe8uvvx.x2lwn1j.xeuugli.xggy1nq.x1t137rt.x1o1ewxj.x3x9cwd.x1e5q0jg.x13rtm0m.x3nfvp2.x1q0g3np.x87ps6o.x1lku1pv.x1a2a7pz.xjyslct.xjbqb8w.x13fuv20.xu3j5b3.x1q0q8m5.x26u7qi.x972fbf.xcfux6l.x1qhh985.xm0m39n.x9f619.x1heor9g.xdj266r.x11i5rnm.xat24cr.x1mh8g0r.xexx8yu.x4uap5.x18d9i69.xkhd6sd.x1n2onr6.x16tdsg8.xt0b8zv.x1hl2dhg.x1ja2u2z[aria-expanded='true'][role='button'][tabindex='0']"
                 )
                 comments = 0
                 if element is None:
@@ -448,7 +448,7 @@ class Finder:
             logger.exception("Error at find_image_url method: {}".format(ex))
             sources = []
 
-        return sources
+        return sources[0]
 
 
     @staticmethod
@@ -503,26 +503,26 @@ class Finder:
 
     @staticmethod
     def __find_all_image_url(post, layout, driver):
-        """finds all image of the facebook post using selenium's webdriver's method"""
+        """finds all images of the Facebook post using selenium's webdriver's method"""
         post_id = None
+        sources = []
         try:
             if layout == "old":
-                # find all img tag that looks like <img class="scaledImageFitWidth img" src=""> div > img[referrerpolicy]
+                # find all img tags with specific classes
                 images = post.find_elements(
                     By.CSS_SELECTOR, "img.scaledImageFitWidth.img"
                 )
-                # extract src attribute from all the img tag,store it in list
             elif layout == "new":
                 images = post.find_elements(
                     By.CSS_SELECTOR, "div > img[referrerpolicy]"
                 )
 
-                # will open the fb carousel and get all the images
+                # Open the FB carousel and get all the images
                 driver.set_window_size(1920, 1200)
 
                 photo_viewer_xpath = '//div[@aria-label="Photo Viewer"]'
 
-                # will try to close the carousel if it's open TODO be sure this does work
+                # Try to close the carousel if it's open
                 try:
                     carousel = driver.find_element(By.XPATH, photo_viewer_xpath)
                     carousel_close_button = carousel.find_element(By.XPATH, '//div[@aria-label="Close"]')
@@ -535,18 +535,19 @@ class Finder:
 
                 try:
                     parent_element = images[-1].find_element(By.XPATH,
-                                                               './ancestor::a[contains(@href, "/photo")]')
+                                                            './ancestor::a[contains(@href, "/photo")]')
                     last_image_count = parent_element.find_element(By.XPATH,
-                                                               "..//div[contains(text(), '+')]")
+                                                                "..//div[contains(text(), '+')]")
                     max_images_count = len(images) + int(last_image_count.text.strip("+"))
                     logger.debug(f"image count is {max_images_count}")
                 except Exception as exce:
                     max_images_count = len(images)
                     logger.debug(exce)
-                first_url_element = images[0].find_element_by_xpath('./ancestor::a')
+
+                first_url_element = images[0].find_element(By.XPATH, './ancestor::a')
 
                 if '/photo' not in first_url_element.get_attribute('href'):
-                    # the post has no photos, could be an event
+                    # The post has no photos, could be an event
                     logger.debug("post doesn't have extra images")
                     return {
                         'post_id': Finder.__get_post_id(first_url_element.get_attribute('href')),
@@ -555,8 +556,8 @@ class Finder:
                     }
 
                 try:
-                    # wait for a second to have the photo viewer render
-                    WebDriverWait(driver, 20).until(EC.visibility_of(first_url_element));
+                    # Wait for a second to have the photo viewer render
+                    WebDriverWait(driver, 20).until(EC.visibility_of(first_url_element))
                     driver.execute_script("arguments[0].scrollIntoView();", first_url_element)
                     ActionChains(driver).move_to_element_with_offset(first_url_element, 0, 0).click().perform()
                 except Exception as error:
@@ -729,15 +730,15 @@ class Finder:
     @staticmethod
     def __accept_cookies(driver):
         try:
-            # Use JavaScript to find the button containing the text "Allow all cookies"
+            # Use JavaScript to find the button containing the exact text "Allow all cookies"
             buttons = driver.execute_script("""
-                return Array.from(document.querySelectorAll('div[role="none"] span'))
-                            .filter(span => span.textContent.includes('Allow all cookies'));
+                return Array.from(document.querySelectorAll('div[role="button"] span'))
+                            .filter(span => span.textContent.trim() === 'Allow all cookies');
             """)
             
             # Check if any elements were found
             if buttons:
-                ActionChains(driver).move_to_element(buttons[-1]).click().perform()  # Click the last one if multiple are found
+                ActionChains(driver).move_to_element(buttons[0]).click().perform()  # Click the first one found
             else:
                 logger.info("No 'Allow all cookies' button found.")
         except NoSuchElementException:
