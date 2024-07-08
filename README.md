@@ -56,7 +56,7 @@
 <h3 id="sourceInstallation"> Installing from source: </h3>
 
 ```
-git clone https://github.com/shaikhsajid1111/facebook_page_scraper
+git clone https://github.com/lullu57/facebook_page_scraper
 ```
 
 <h4> Inside project's directory </h4>
@@ -75,19 +75,19 @@ pip3 install facebook-page-scraper
 Or, to install this latest master branch:
 
 ```sh
-pip install git+https://github.com/moda20/facebook_page_scraper.git@master
+pip install git+https://github.com/lullu57/facebook_page_scraper.git@master
 ```
 
 Or, to force update the branch after an update : 
 
 ```sh
-pip install --force-reinstall --no-deps git+https://github.com/moda20/facebook_page_scraper.git@master
+pip install --force-reinstall --no-deps git+https://github.com/lullu57/facebook_page_scraper.git@master
 ```
 
 And to add it to your requirements.txt manually : 
 
 ```
-facebook-page-scraper @ git+https://github.com/moda20/facebook_page_scraper.git@master
+facebook-page-scraper @ git+https://github.com/lullu57/facebook_page_scraper.git@master
 ```
 
 
