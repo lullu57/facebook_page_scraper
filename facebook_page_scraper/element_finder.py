@@ -225,13 +225,13 @@ class Finder:
                     comments
                 )
             elif layout == "new":
-                element = post.find_element(
-                    By.CSS_SELECTOR, "div.x1i10hfl.x1qjc9v5.xjqpnuy.xa49m3k.xqeqjp1.x2hbi6w.x1ypdohk.xdl72j9.x2lah0s.xe8uvvx.x2lwn1j.xeuugli.xggy1nq.x1t137rt.x1o1ewxj.x3x9cwd.x1e5q0jg.x13rtm0m.x3nfvp2.x1q0g3np.x87ps6o.x1lku1pv.x1a2a7pz.xjyslct.xjbqb8w.x13fuv20.xu3j5b3.x1q0q8m5.x26u7qi.x972fbf.xcfux6l.x1qhh985.xm0m39n.x9f619.x1heor9g.xdj266r.x11i5rnm.xat24cr.x1mh8g0r.xexx8yu.x4uap5.x18d9i69.xkhd6sd.x1n2onr6.x16tdsg8.xt0b8zv.x1hl2dhg.x1ja2u2z[aria-expanded='true'][role='button'][tabindex='0']"
-                )
-                comments = 0
-                if element is None:
-                    return comments
-                return element.text
+                try:
+                    element = WebDriverWait(post, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, "div.x1i10hfl.x1qjc9v5.xjqpnuy.xa49m3k.xqeqjp1.x2hbi6w.x1ypdohk.xdl72j9.x2lah0s.xe8uvvx.x2lwn1j.xeuugli.xggy1nq.x1t137rt.x1o1ewxj.x3x9cwd.x1e5q0jg.x13rtm0m.x3nfvp2.x1q0g3np.x87ps6o.x1lku1pv.x1a2a7pz")))
+                    comments_element = element.find_element(By.CSS_SELECTOR, "span.x193iq5w.xeuugli.x13faqbe.x1vvkbs.xlh3980.xvmahel.x1n0sxbx.x1lliihq.x1s928wv.xhkezso.x1gmr53x.x1cpjm7i.x1fgarty.x1943h6x.x4zkp8e.x3x7a5m.x6prxxf.xvq8zen.xo1l8bm.xi81zsa")
+                    comments_text = comments_element.get_attribute("textContent")
+                    comments = Scraping_utilities._Scraping_utilities__extract_numbers(comments_text)
+                except TimeoutException:
+                    comments = 0
         except NoSuchElementException:
             comments = 0
         except Exception as ex:
@@ -429,6 +429,20 @@ class Finder:
             logger.exception("Error at find_video_url method : {}".format(ex))
 
         return srcs
+    
+    @staticmethod
+    def __is_valid_image_url(url):
+        """
+        Check if the URL is a valid image URL, excluding emojis, SVGs, and data URLs.
+        """
+        base_url = url.split('?')[0]  # Get the part before '?'
+        if re.match(r"^data:image", base_url):
+            return False  # Exclude data URLs
+        if 'emoji.php' in base_url or 'rsrc.php' in base_url:
+            return False  # Exclude emoji and resource URLs
+        if re.match(r".*\.(jpg|jpeg|png|gif)$", base_url, re.IGNORECASE):
+            return True  # Include common image file extensions
+        return False
 
     @staticmethod
     def __find_image_url(post, layout):
@@ -442,15 +456,18 @@ class Finder:
                 images = post.find_elements(By.CSS_SELECTOR, "div img[referrerpolicy], img[src], img[class*='img'], img[class*='scaledImageFitWidth']")
             
             sources = [image.get_attribute("src") for image in images if image.get_attribute("src")] if images else []
+            # Filter out invalid image URLs
+            valid_sources = [src for src in sources if Finder.__is_valid_image_url(src)]
         except NoSuchElementException:
-            sources = []
+            valid_sources = []
         except Exception as ex:
             logger.exception("Error at find_image_url method: {}".format(ex))
-            sources = []
+            valid_sources = []
 
-        return sources[0]
+        return valid_sources
 
 
+   
     @staticmethod
     def __find_post_id(post, layout):
         """finds all image of the facebook post using selenium's webdriver's method"""
@@ -689,19 +706,29 @@ class Finder:
             if layout == "old":
                 name = driverOrPost.find_element(By.CSS_SELECTOR, "a._64-f")
             elif layout == "new":
-                name = driverOrPost.find_element(By.TAG_NAME, "strong")
+                try:
+                    # Try to find the name in an h1 element
+                    name_element = driverOrPost.find_element(By.CSS_SELECTOR, "div.x78zum5 div.x1e56ztr span.x193iq5w h1.html-h1")
+                except NoSuchElementException:
+                    # If not found, fallback to find the name in an h2 element (if needed for other cases)
+                    name_element = driverOrPost.find_element(By.CSS_SELECTOR, "div.x1e56ztr h2.html-h2 span span")
+
             url = None
-            if name is not None:
-                url_elem = name.find_element(By.XPATH, "./ancestor::a")
-                url = url_elem.get_attribute('href')
+            if name_element is not None:
+                # Attempt to find the ancestor link element
+                try:
+                    url_elem = name_element.find_element(By.XPATH, "./ancestor::a")
+                    url = url_elem.get_attribute('href')
+                except NoSuchElementException:
+                    url = None  # URL not found
+
             return {
-                'name' : name.get_attribute(
-                    "textContent"
-                ),
+                'name': name_element.get_attribute("textContent") if name_element else '',
                 'url': url
             }
         except Exception as ex:
-            logger.exception("Error at __find_name method : {}".format(ex))
+            logger.exception("Error at __find_name method: {}".format(ex))
+            return {'name': '', 'url': None}
 
     @staticmethod
     def __detect_ui(driver):
