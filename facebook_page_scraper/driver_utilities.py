@@ -4,7 +4,7 @@ import logging
 import sys
 import time
 from random import randint
-
+from selenium.common.exceptions import TimeoutException, WebDriverException
 from selenium.common.exceptions import (NoSuchElementException,
                                         WebDriverException)
 from selenium.webdriver.common.by import By
@@ -121,37 +121,44 @@ class Utilities:
 
     @staticmethod
     def __wait_for_element_to_appear(driver, layout, timeout):
-        """expects driver's instance, wait for posts to show.
-        post's CSS class name is userContentWrapper
-        """
+        """Waits for posts to load on a page. Adjusts timeout for pages with no posts."""
         try:
+            # Short initial wait time to check for the presence of posts
+            initial_wait_time = 10  # seconds
             if layout == "old":
-                # wait for page to load so posts are visible
                 body = driver.find_element(By.CSS_SELECTOR, "body")
                 for _ in range(randint(3, 5)):
                     body.send_keys(Keys.PAGE_DOWN)
-                WebDriverWait(driver, timeout).until(EC.presence_of_element_located(
-                    (By.CSS_SELECTOR, '.userContentWrapper')))
+                WebDriverWait(driver, initial_wait_time).until(
+                    EC.presence_of_element_located((By.CSS_SELECTOR, '.userContentWrapper'))
+                )
+            elif layout == "new":
+                WebDriverWait(driver, initial_wait_time).until(
+                    EC.presence_of_element_located((By.CSS_SELECTOR, "[aria-posinset]"))
+                )
+
+            # If the initial wait is successful, continue with the normal wait
+            if layout == "old":
+                WebDriverWait(driver, timeout).until(
+                    EC.presence_of_element_located((By.CSS_SELECTOR, '.userContentWrapper'))
+                )
                 return True
             elif layout == "new":
                 WebDriverWait(driver, timeout).until(
-                    EC.presence_of_element_located((By.CSS_SELECTOR, "[aria-posinset]")))
+                    EC.presence_of_element_located((By.CSS_SELECTOR, "[aria-posinset]"))
+                )
                 print("new layout loaded")
-
                 return True
 
+        except TimeoutException:
+            logger.critical("No posts were found within the initial wait time!")
+            return False
         except WebDriverException:
-            # if it was not found,it means either page is not loading or it does not exists
             logger.critical("No posts were found!")
             return False
-            # (optional) exit the program, because if posts does not exists,we cannot go further
-            # Utilities.__close_driver(driver)
-            # sys.exit(1)
         except Exception as ex:
-            logger.exception(
-                "Error at wait_for_element_to_appear method : {}".format(ex))
+            logger.exception("Error at wait_for_element_to_appear method: {}".format(ex))
             return False
-            # Utilities.__close_driver(driver)
 
     @staticmethod
     def __click_see_more(driver, content, selector=None):
