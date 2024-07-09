@@ -110,7 +110,7 @@ class Facebook_scraper:
         #self.__handle_popup(self.__layout)
         # timestamp limitation for scraping posts
         timestamp_edge_hit = False
-        while (not timestamp_edge_hit) and (len(self.__data_dict) < self.posts_count) and elements_have_loaded:
+        while ((not timestamp_edge_hit)) or ((len(self.__data_dict) < self.posts_count) and elements_have_loaded):
             #self.__handle_popup(self.__layout)
             # self.__find_elements(name)
             timestamp_edge_hit = self.__find_elements(minimum_timestamp)
@@ -217,6 +217,9 @@ class Facebook_scraper:
         all_posts = self.__remove_duplicates(
             all_posts) 
 
+        if all_posts == []:
+            self.__no_post_found(all_posts)
+            return False
         # iterate over all the posts and find details from the same
         for post in all_posts:
             try:
