@@ -363,6 +363,10 @@ class Facebook_scraper:
                     **({"posted_on": posted_time} if not self.isGroup else {}),
                     **({"video": video} if not self.isGroup else {}),
                 }
+            
+                #Return driver back to main page by clicking close button
+                Utilities._Utilities__click_close_photo_button(self.__driver)
+            
             except Exception as ex:
                 logger.exception(
                     "Error at find_elements method : {}".format(ex))

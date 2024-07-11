@@ -194,3 +194,34 @@ class Utilities:
         except Exception as ex:
             #if not found, that's fine silently just log thing do not stop
             logger.info('The Cookie Consent Prompt was not found!: ', ex)
+       
+    @staticmethod     
+    def __click_close_photo_button(driver, timeout=5):
+        """
+        Click the close button for a photo.
+
+        Parameters:
+        driver (WebDriver): The Selenium WebDriver instance.
+        timeout (int): The maximum time to wait for the element to be clickable.
+
+        Returns:
+        bool: True if the element was found and clicked, False otherwise.
+        """
+        try:
+            # Define the XPath for the close button
+            close_button_xpath = '//div[@aria-label="Close" and @role="button"]'
+            
+            # Wait until the close button is clickable
+            close_button = WebDriverWait(driver, timeout).until(
+                EC.element_to_be_clickable((By.XPATH, close_button_xpath))
+            )
+            
+            # Click the close button
+            close_button.click()
+            
+            print("Close button clicked successfully.")
+            return True
+        
+        except Exception as e:
+            print(f"An error occurred: {e}")
+            return False
