@@ -63,6 +63,7 @@ class Facebook_scraper:
         self.driver_install_config = driver_install_config
         self.__data_dict = {}  # this dictionary stores all post's data
         self.__extracted_post = set()
+        self.retry = 10
 
     def __start_driver(self):
         """changes the class member __driver value to driver on call"""
@@ -110,7 +111,7 @@ class Facebook_scraper:
         #self.__handle_popup(self.__layout)
         # timestamp limitation for scraping posts
         timestamp_edge_hit = False
-        while ((not timestamp_edge_hit)) or ((len(self.__data_dict) < self.posts_count) and elements_have_loaded):
+        while ((not timestamp_edge_hit) or ((len(self.__data_dict) < self.posts_count) and elements_have_loaded)):
             #self.__handle_popup(self.__layout)
             # self.__find_elements(name)
             timestamp_edge_hit = self.__find_elements(minimum_timestamp)
@@ -130,23 +131,24 @@ class Facebook_scraper:
         return json.dumps(self.__data_dict, ensure_ascii=False)
 
     def __json_to_csv(self, filename, json_data, directory):
+        original_directory = os.getcwd()  # Store the original working directory
+        os.chdir(directory)  # Change to the target directory
 
-        os.chdir(directory)  # change working directory to given directory
-        # headers of the CSV file
+        # Headers of the CSV file
         fieldnames = ['id', 'name', 'shares', 'likes', 'loves', 'wow', 'cares', 'sad', 'angry', 'haha', 'reactions_count', 'comments',
-                      'content', 'posted_on', 'video', 'images', 'post_url']
-        # open and start writing to CSV files
-        mode = 'w'
-        if os.path.exists("{}.csv".format(filename)):
-            # if the CSV file already exists then switch to append mode
-            mode = 'a'
-        with open("{}.csv".format(filename), mode, newline='', encoding="utf-8") as data_file:
-            # instantiate DictWriter for writing CSV file
+                    'content', 'posted_on', 'video', 'images', 'post_url']
+        
+        file_path = "{}.csv".format(filename)
+        mode = 'w'  # Default mode is write
+        
+        # Check if file exists to determine if we need to write headers
+        file_exists = os.path.exists(file_path)
+        
+        with open(file_path, mode, newline='', encoding="utf-8") as data_file:
             writer = csv.DictWriter(data_file, fieldnames=fieldnames)
-            if mode == 'w':
-                # if writing mode is
-                writer.writeheader()  # write headers to CSV file
-            # iterate over entire dictionary, write each posts as a row to CSV file
+            if not file_exists:
+                writer.writeheader()  # Write headers only if the file doesn't exist
+            
             for key in json_data:
                 post = json_data[key]  # For better readability
                 reactions = post.get('reactions', {})  # Default to an empty dict if 'reactions' does not exist
@@ -169,9 +171,9 @@ class Facebook_scraper:
                     'images': " ".join(post.get('images', [])),  # Join images list into a string, defaulting to an empty list
                     'post_url': post.get('post_url', '')
                 }
-                writer.writerow(row)  # write row to CSV file
+                writer.writerow(row)  # Write row to CSV file
 
-            data_file.close()  # after writing close the file
+        os.chdir(original_directory)  # Change back to the original working directory
 
     def scrap_to_csv(self, filename, directory=os.getcwd(),):
         try:
@@ -219,7 +221,7 @@ class Facebook_scraper:
 
         if all_posts == []:
             self.__no_post_found(all_posts)
-            return False
+            return True
         # iterate over all the posts and find details from the same
         for post in all_posts:
             try:
