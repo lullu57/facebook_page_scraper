@@ -491,7 +491,7 @@ class Finder:
             sources = None
             pass
         except Exception as ex:
-            logger.exception("Error at find_image_url method : {}".format(ex))
+            logger.exception("Error at __find_post_id method : {}".format(ex))
             sources = None
 
         return sources
@@ -649,7 +649,7 @@ class Finder:
             sources = []
             pass
         except Exception as ex:
-            logger.exception("Error at find_image_url method : {}".format(ex))
+            logger.exception("Error at __find_all_image_url method : {}".format(ex))
             sources = []
 
         return {
