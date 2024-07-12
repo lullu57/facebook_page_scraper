@@ -594,7 +594,7 @@ URL for that post
 <br>
 
 <hr>
-If you encounter anything unusual please feel free to create issue <a href='https://github.com/shaikhsajid1111/facebook_page_scraper/issues'>here</a>
+If you encounter anything unusual please feel free to create issue <a href='https://github.com/lullu57/facebook_page_scraper/issues'>here</a>
 <hr>
 
 <h2 id="license"> LICENSE </h2>
