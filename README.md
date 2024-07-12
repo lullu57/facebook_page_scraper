@@ -94,7 +94,6 @@ facebook-page-scraper @ git+https://github.com/lullu57/facebook_page_scraper.git
 <br>
 <hr>
 <h2 id="instantiation"> How to use? </h2>
-
 ```python
 #import Facebook_scraper class from facebook_page_scraper
 from facebook_page_scraper import Facebook_scraper
@@ -114,7 +113,26 @@ fb_email = os.getenv('fb_email')
 isGroup= False
 meta_ai = Facebook_scraper(page_or_group_name, posts_count, browser, proxy=proxy, timeout=timeout, headless=headless, isGroup=isGroup)
 
+# Example usage with session maintenance
+
+page_name = "Meta"
+page_url = "https://www.facebook.com/Meta"
+
+# Set these values before running scrape to csv
+scraper.page_or_group_name = page_name
+scraper.URL = page_url
+# Open session for the specific URL
+scraper.open_session(page_url)
+
+filename = "data_file"  #file name without CSV extension, where data will be saved
+directory = "E:\data" #directory where CSV file will be saved
+
+scraper.scrap_to_csv(filename, directory)
+# Close session after scraping to prevent repetitive logins
+scraper.close_session()
+
 ```
+
 
 <h3 id="scraperParameters"> Parameters for  <code>Facebook_scraper(page_name, posts_count, browser, proxy, timeout, headless) </code> class </h3>
 <table>
@@ -326,16 +344,26 @@ Output Structure for JSON format:
 <br>
 
 <h3 id="CSVWay"> For saving post's data directly to <b>CSV</b> file</h3>
+<br>
 
 ```python
 #call scrap_to_csv(filename,directory) method
 
+# Set these values before running scrape to csv
+scraper.page_or_group_name = page_name
+scraper.URL = page_url
+# Open session for the specific URL
+scraper.open_session(page_url)
 
-filename = "data_file"  #file name without CSV extension,where data will be saved
+filename = "data_file"  #file name without CSV extension, where data will be saved
 directory = "E:\data" #directory where CSV file will be saved
-meta_ai.scrap_to_csv(filename, directory)
+
+scraper.scrap_to_csv(filename, directory)
+# Close session after scraping to prevent repetitive logins
+scraper.close_session()
 
 ```
+
 
 content of `data_file.csv`:
 
