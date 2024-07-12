@@ -86,7 +86,7 @@ pip install --force-reinstall --no-deps git+https://github.com/lullu57/facebook_
 
 And to add it to your requirements.txt manually : 
 
-```
+```sh
 facebook-page-scraper @ git+https://github.com/lullu57/facebook_page_scraper.git@master
 ```
 
@@ -94,7 +94,8 @@ facebook-page-scraper @ git+https://github.com/lullu57/facebook_page_scraper.git
 <br>
 <hr>
 <h2 id="instantiation"> How to use? </h2>
-```
+
+```python
 #import Facebook_scraper class from facebook_page_scraper
 from facebook_page_scraper import Facebook_scraper
 
@@ -264,13 +265,11 @@ password to log into Facebook when scraping (recommended to use .env)
 Using logged-in scraping methods may result in the permanent suspension of your account. Proceed with caution, as violating a platform's terms of service can lead to severe consequences. Exercise discretion and adhere to ethical practices when collecting data through scraping. The library/provider assumes no responsibility for any consequences resulting from the misuse of scraping methods.
 
 <h3> Done with instantiation?. <b>Let the scraping begin!</b> </h3>
-<br
-
->
+<br>
 
 <h3 id="JSONWay"> For post's data in <b>JSON</b> format:</h3>
 
-```
+```python
 #call the scrap_to_json() method
 
 json_data = meta_ai.scrap_to_json()
@@ -307,6 +306,7 @@ Output:
   }, ...
 
 }
+
 ```
 
 <div id="jsonOutput">
@@ -346,7 +346,7 @@ Output Structure for JSON format:
 <h3 id="CSVWay"> For saving post's data directly to <b>CSV</b> file</h3>
 <br>
 
-```
+```pyhton
 #call scrap_to_csv(filename,directory) method
 
 # Set these values before running scrape to csv
