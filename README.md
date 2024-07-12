@@ -94,7 +94,7 @@ facebook-page-scraper @ git+https://github.com/lullu57/facebook_page_scraper.git
 <br>
 <hr>
 <h2 id="instantiation"> How to use? </h2>
-```python
+```
 #import Facebook_scraper class from facebook_page_scraper
 from facebook_page_scraper import Facebook_scraper
 
@@ -270,7 +270,7 @@ Using logged-in scraping methods may result in the permanent suspension of your 
 
 <h3 id="JSONWay"> For post's data in <b>JSON</b> format:</h3>
 
-```python
+```
 #call the scrap_to_json() method
 
 json_data = meta_ai.scrap_to_json()
@@ -346,7 +346,7 @@ Output Structure for JSON format:
 <h3 id="CSVWay"> For saving post's data directly to <b>CSV</b> file</h3>
 <br>
 
-```python
+```
 #call scrap_to_csv(filename,directory) method
 
 # Set these values before running scrape to csv
