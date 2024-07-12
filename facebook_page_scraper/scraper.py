@@ -42,7 +42,7 @@ class Facebook_scraper:
     # if it returns true,it will break the loop. After coming out of loop,driver will be closed and it will return post whatever was found
 
     def __init__(self, page_or_group_name=None, url=None, posts_count=10, browser="chrome", proxy=None,
-                 timeout=600, headless=True, isGroup=False, username=None, password=None, driver_install_config=None):
+                 timeout=400, headless=True, isGroup=False, username=None, password=None, driver_install_config=None):
         if url:
             self.URL = url
             self.page_or_group_name = page_or_group_name
@@ -64,11 +64,34 @@ class Facebook_scraper:
         self.__data_dict = {}  # this dictionary stores all post's data
         self.__extracted_post = set()
         self.retry = 10
+        self.__driver = None  # Initialize driver as None
+
 
     def __start_driver(self):
-        """changes the class member __driver value to driver on call"""
-        self.__driver = Initializer(
-            self.browser, self.proxy, self.headless).init(self.driver_install_config)
+        """Starts the WebDriver"""
+        if not self.__driver:
+            self.__driver = Initializer(
+                self.browser, self.proxy, self.headless).init(self.driver_install_config)
+            
+    def __login(self):
+        """Logs into Facebook if username is provided"""
+        if self.username:
+            Finder._Finder__accept_cookies(self.__driver)
+            Finder._Finder__login(self.__driver, self.username, self.password)
+            
+    def open_session(self, url):
+        """Opens the WebDriver session, navigates to the URL, and logs in if necessary"""
+        self.__start_driver()
+        self.__driver.get(url)
+        self.__login()
+        
+        
+    def close_session(self):
+        """Closes the WebDriver session"""
+        if self.__driver:
+            Utilities._Utilities__close_driver(self.__driver)
+            self.__driver = None
+            
 
     def __handle_popup(self, layout):
         # while scrolling, wait for login popup to show, it can be skipped by clicking "Not Now" button
@@ -89,45 +112,31 @@ class Facebook_scraper:
     def __check_timeout(self, start_time, current_time):
         return (current_time-start_time) > self.timeout
 
-    def scrap_to_json(self, minimum_timestamp = None):
-        # call the __start_driver and override class member __driver to webdriver's instance
-        self.__start_driver()
+    def scrap_to_json(self, minimum_timestamp=None):
+        self.__data_dict = {}
+        """Scrapes data to JSON format"""
+        if not self.__driver:
+            self.open_session(self.URL)
+
         starting_time = time.time()
-        # navigate to URL
         self.__driver.get(self.URL)
-        # only login if username is provided
-        Finder._Finder__accept_cookies(self.__driver)
-        self.username is not None and Finder._Finder__login(self.__driver, self.username, self.password)
-        
         self.__layout = Finder._Finder__detect_ui(self.__driver)
-        # sometimes we get popup that says "your request couldn't be processed", however
-        # posts are loading in background if popup is closed, so call this method in case if it pops up.
         Utilities._Utilities__close_error_popup(self.__driver)
-        # wait for post to load
         elements_have_loaded = Utilities._Utilities__wait_for_element_to_appear(
             self.__driver, self.__layout, self.timeout)
-        # scroll down to bottom most
         Utilities._Utilities__scroll_down(self.__driver, self.__layout)
-        #self.__handle_popup(self.__layout)
-        # timestamp limitation for scraping posts
+
         timestamp_edge_hit = False
         while ((not timestamp_edge_hit) and ((len(self.__data_dict) < self.posts_count) and elements_have_loaded)):
-            #self.__handle_popup(self.__layout)
-            # self.__find_elements(name)
             timestamp_edge_hit = self.__find_elements(minimum_timestamp)
             current_time = time.time()
-            if self.__check_timeout(starting_time, current_time) is True:
+            if self.__check_timeout(starting_time, current_time):
                 logger.setLevel(logging.INFO)
                 logger.info('Timeout...')
                 break
-            Utilities._Utilities__scroll_down(
-                self.__driver, self.__layout)  # scroll down
-        # close the browser window after job is done.
-        Utilities._Utilities__close_driver(self.__driver)
-        # dict trimming, might happen that we find more posts than it was asked, so just trim it
-        self.__data_dict = dict(list(self.__data_dict.items())[
-                                0:int(self.posts_count)])
+            Utilities._Utilities__scroll_down(self.__driver, self.__layout)
 
+        self.__data_dict = dict(list(self.__data_dict.items())[0:int(self.posts_count)])
         return json.dumps(self.__data_dict, ensure_ascii=False)
 
     def __json_to_csv(self, filename, json_data, directory):
@@ -175,10 +184,12 @@ class Facebook_scraper:
 
         os.chdir(original_directory)  # Change back to the original working directory
 
-    def scrap_to_csv(self, filename, directory=os.getcwd(),):
+    def scrap_to_csv(self, filename, directory=os.getcwd()):
         try:
             data = self.scrap_to_json()  # get the data in JSON format from the same class method
             # convert it and write to CSV
+            if data == '{}': # If no data was found, return False
+                return False
             self.__json_to_csv(filename, json.loads(data), directory)
             return True
         except Exception as ex:
